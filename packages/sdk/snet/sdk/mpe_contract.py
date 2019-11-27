@@ -38,7 +38,7 @@ class MPEContract:
 
         event_abi = self.contract._find_matching_event_abi(
             event_name="ChannelOpen")
-        group = service.metadata.get_group_id(service.group['group_name'])
+        group = service.service_metadata.get_group_id(service.group['group_name'])
         channels_opened = list(filter(
             lambda channel: channel.sender == account.address and channel.signer == account.signer_address and channel.recipient == service.group[
                 "payment_address"] and channel.groupId == group,

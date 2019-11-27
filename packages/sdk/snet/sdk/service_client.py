@@ -24,7 +24,7 @@ class ServiceClient:
         self.sdk = sdk
         self.options = options
         self.group = group
-        self.metadata = service_metadata
+        self.service_metadata = service_metadata
 
         self.payment_channel_management_strategy = payment_channel_management_strategy
         self.expiry_threshold = self.group["payment"]["payment_expiration_threshold"]
@@ -53,7 +53,7 @@ class ServiceClient:
     def _get_grpc_channel(self):
         endpoint = self.options.get("endpoint", None)
         if endpoint is None:
-            endpoint = self.servcie_metadata.get_all_endpoints_for_group(self.group["group_name"])[0]
+            endpoint = self.service_metadata.get_all_endpoints_for_group(self.group["group_name"])[0]
         endpoint_object = urlparse(endpoint)
         if endpoint_object.port is not None:
             channel_endpoint = endpoint_object.hostname + ":" + str(endpoint_object.port)

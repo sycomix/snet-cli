@@ -1,6 +1,6 @@
 import google.protobuf.internal.api_implementation
 
-from packages.sdk.snet.sdk.metadata_provider.ipfs_metadata_provider import IPFSMetadataProvider
+from snet.sdk.metadata_provider.ipfs_metadata_provider import IPFSMetadataProvider
 
 google.protobuf.internal.api_implementation.Type = lambda: 'python'
 
