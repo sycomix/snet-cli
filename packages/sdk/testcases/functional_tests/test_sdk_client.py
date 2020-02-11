@@ -89,12 +89,13 @@ def test_sdk():
     group_name = "default_group"
 
     config = {
-        "private_key": "0xc71478a6d0fe44e763649de0a0deb5a080b788eefbbcf9c6f7aef0dd5dbd67e0",
+        "private_key": "ABD04636C7808C658FF173A695DA976A0D7FB46171852BB7CC847FF6F01A9BDF",
         "eth_rpc_endpoint": "http://localhost:8545",
         "mpe_contract_address": "0x5c7a4290f6f8ff64c69eeffdfafc8644a4ec3a4e",
         "registry_contract_address": "0x4e74fefa82e83e0964f0d9f53c68e03f7298a8b2",
         "token_contract_address": "0x6e5f20669177f5bdf3703ec5ea9c4d4fe3aabd14",
         "ipfs_rpc_endpoint": "http://localhost:5002"
+        #"free_call_token":"b'\xa4\xeb\x08\n\xeb\x83\xc4\x14S\x10*?\xacm\x0e\x95\x83\xde\xdf\x94\xa8\x9c\x10F\xf3\xfeh\x1a&y\x7f\xabe\xda\xbf#n\xa4\xdf\xd3v\xbe~\x1f(3\xe6\xd3\x85\x8cc\xa3\xcc\x1f\xe8\xec\xbb\x11\x11w\x1a\xdc\xe7A\x1c'"
 
     }
 
@@ -102,8 +103,8 @@ def test_sdk():
     service_client = snet_sdk.create_service_client(org_id, service_id, examples_service_pb2_grpc.CalculatorStub,
                                                     group_name=group_name)
 
-    verify_when_no_open_channel(service_client)
-    open_first_channel(service_client)
+    #verify_when_no_open_channel(service_client)
+    #open_first_channel(service_client)
     first_call_to_service_after_opening_first_channel(service_client)
     verify_channel_state_after_opening_first_channel_and_first_call_to_service(service_client)
     second_call_to_service_after_opening_first_channel(service_client)

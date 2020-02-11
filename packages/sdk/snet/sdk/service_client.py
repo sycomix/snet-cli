@@ -35,7 +35,8 @@ class ServiceClient:
         self._base_grpc_channel = self._get_grpc_channel()
         self.grpc_channel = grpc.intercept_channel(self._base_grpc_channel,
                                                    generic_client_interceptor.create(self._intercept_call))
-        self.payment_channel_provider=PaymentChannelProvider(sdk_web3,self._generate_payment_channel_state_service_client(),mpe_contract)
+        self.state_service_client=self._generate_payment_channel_state_service_client()
+        self.payment_channel_provider=PaymentChannelProvider(sdk_web3,self.state_service_client,mpe_contract)
         self.service = self._generate_grpc_stub(service_stub)
         self.payment_channels = []
         self.last_read_block = 0
@@ -58,7 +59,7 @@ class ServiceClient:
 
 
     def _get_grpc_channel(self):
-        endpoint = self.options.get("endpoint", None)
+        endpoint = "http://34.197.167.102:8085"
         if endpoint is None:
             endpoint = self.service_metadata.get_all_endpoints_for_group(self.group["group_name"])[0]
         endpoint_object = urlparse(endpoint)
@@ -156,4 +157,17 @@ class ServiceClient:
                                                                             self.account.signer_private_key).signature)
 
         return signature
+
+    def get_no_of_free_calls(self,token_for_free_call):
+
+        # message = web3.Web3.soliditySha3((
+        #     ["string", "string", "string", "string", "string", "uint256", "bytes32"],
+        #     ["__prefix_free_trial", email, org_id, service_id, group_id,
+        #      current_block_number, token_for_free_call],
+        #     private_key)
+        #
+        # signature = service_client.generate_signature(message)
+
+        pass
+
 
