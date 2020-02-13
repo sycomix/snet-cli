@@ -16,23 +16,24 @@ class FreeCallPaymentStrategy(PaymentStrategy):
 
         if self.is_free_call_available(service_client):
             #TODO integration test with daemon for free call
-            auth_token=b'w{7\x8c\xa4\xe1\xbaC;uG\xf6C\x8dF&\xe6NBv\x0c\xdf\xdcc\x1bI\x7f\x14\x01#\xdf\x87Z\x16\xdeu5\x90\x1bt\x8e\x15\xfb\xf2j\x1e\x0e\xb4\xc5\xea\x88\xd6\xd7O]\x92\xeb\xee\xbaR\xc5K\xca\x1d\x1b'
+            auth_token=b'\xe6\xa5s\xb4D\xb5\xad\x86\x9d\xbd\xc4\x16N}\xc7 \x81\xe3\xbae0|\xa1\xdcK}\x81\xc2*\xb2\xab\x92\x08m\xa16\xd3mr]C\x95j\x1d\xdd\xa2\xc9\xd9\x8d\xde\x12\xc4\xb1!+\xea\x97=o)x\xde\xa6Q\x1c'
             org_id = "ar3"
             service_id = "freecall"
             group_id = "qY1r6474PbBZ8lu4IhTbQ+e00dT4WsASt7vBILVTDvU="
             cbn = service_client.sdk_web3.eth.getBlock("latest").number
             message = web3.Web3.soliditySha3(
                 ["string", "string", "string", "string", "string", "uint256", "bytes32"],
-                ["__prefix_free_trial", "sumitk002@gmail.com", org_id, service_id, group_id, 7304886, auth_token]
+                ["__prefix_free_trial", "sumitk002@gmail.com", org_id, service_id, group_id, 7313767, auth_token]
             )
             signature = service_client.generate_signature(message)
+            print(signature)
 
 
             metadata = [("snet-free-call-auth-token-bin", auth_token),
-                ("snet-free-call-token-issue-block", str(7304886)),
+                ("snet-free-call-token-issue-block", str(7313767)),
                         ("snet-payment-type","free-call"),
                         ("snet-free-call-user-id","sumitk002@gmail.com"),
-                        ("snet-current-block-number", str(7304886)),
+                        ("snet-current-block-number", str(7313767)),
                         ("snet-payment-channel-signature-bin",signature)
 
             ]
