@@ -29,7 +29,7 @@ class FreeCallPaymentStrategy(PaymentStrategy):
             print(signature)
 
 
-            metadata = [("snet-free-call-auth-token-bin", auth_token),
+            metadata = [("snet-free-call-token-expiry-block", auth_token),
                 ("snet-free-call-token-issue-block", str(7313767)),
                         ("snet-payment-type","free-call"),
                         ("snet-free-call-user-id","sumitk002@gmail.com"),
