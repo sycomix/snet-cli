@@ -59,7 +59,7 @@ class ServiceClient:
 
 
     def _get_grpc_channel(self):
-        endpoint = "http://34.197.167.102:8085"
+        endpoint = "http://34.197.167.102:8083"
         if endpoint is None:
             endpoint = self.service_metadata.get_all_endpoints_for_group(self.group["group_name"])[0]
         endpoint_object = urlparse(endpoint)
