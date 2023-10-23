@@ -30,13 +30,12 @@ def publish_proto_in_ipfs(ipfs_client, protodir):
     """
 
     if (not os.path.isdir(protodir)):
-        raise Exception("Directory %s doesn't exists" % protodir)
+        raise Exception(f"Directory {protodir} doesn't exists")
 
     files = glob.glob(os.path.join(protodir, "*.proto"))
 
-    if (len(files) == 0):
-        raise Exception("Cannot find any %s files" %
-                        (os.path.join(protodir, "*.proto")))
+    if not files:
+        raise Exception(f'Cannot find any {os.path.join(protodir, "*.proto")} files')
 
     # We are sorting files before we add them to the .tar since an archive containing the same files in a different
     # order will produce a different content hash;
@@ -88,7 +87,7 @@ def hash_to_bytesuri(s):
     Convert in and from bytes uri format used in Registry contract
     """
     # TODO: we should pad string with zeros till closest 32 bytes word because of a bug in processReceipt (in snet_cli.contract.process_receipt)
-    s = "ipfs://" + s
+    s = f"ipfs://{s}"
     return s.encode("ascii").ljust(32 * (len(s)//32 + 1), b"\0")
 
 
@@ -112,10 +111,9 @@ def safe_extract_proto_from_ipfs(ipfs_client, ipfs_hash, protodir):
                 raise Exception(
                     "tarball has directories. We do not support it.")
             if (not m.isfile()):
-                raise Exception(
-                    "tarball contains %s which is not a files" % m.name)
+                raise Exception(f"tarball contains {m.name} which is not a files")
             fullname = os.path.join(protodir, m.name)
             if (os.path.exists(fullname)):
-                raise Exception("%s already exists." % fullname)
+                raise Exception(f"{fullname} already exists.")
         # now it is safe to call extractall
         f.extractall(protodir)

@@ -72,8 +72,7 @@ class ConcurrencyManager:
             channel_id=channel.channel_id, current_nonce=nonce, signed_amount=amount,
             signature=bytes(sign_mpe_signature), claim_signature=bytes(mpe_signature),
             current_block=current_block_number)
-        token_reply = stub.GetToken(request)
-        return token_reply
+        return stub.GetToken(request)
 
     def record_successful_call(self):
         self.__used_amount += 1

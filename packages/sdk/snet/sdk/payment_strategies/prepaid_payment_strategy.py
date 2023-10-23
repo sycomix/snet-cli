@@ -15,13 +15,12 @@ class PrePaidPaymentStrategy(PaymentStrategy):
         if channel is None:
             channel = self.select_channel(service_client)
         token = self.concurrency_manager.get_token(service_client, channel, self.get_price(service_client))
-        metadata = [
+        return [
             ("snet-payment-type", "prepaid-call"),
             ("snet-payment-channel-id", str(channel.channel_id)),
             ("snet-payment-channel-nonce", str(channel.state["nonce"])),
-            ("snet-prepaid-auth-token-bin", bytes(token, 'UTF-8'))
+            ("snet-prepaid-auth-token-bin", bytes(token, 'UTF-8')),
         ]
-        return metadata
 
     def get_concurrency_token_and_channel(self, service_client):
         channel = self.select_channel(service_client)

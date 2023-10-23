@@ -17,13 +17,13 @@ def get_contract_address(cmd, contract_name, error_message=None):
         return cmd.w3.toChecksumAddress(getattr(cmd.args, a))
 
     # try to get from command line argument contractname_at
-    a = "%s_at" % contract_name.lower()
+    a = f"{contract_name.lower()}_at"
     if (hasattr(cmd.args, a) and getattr(cmd.args, a)):
         return cmd.w3.toChecksumAddress(getattr(cmd.args, a))
 
-    # try to get from current session configuration
-    rez = cmd.config.get_session_field("current_%s_at" % (contract_name.lower()), exception_if_not_found=False)
-    if rez:
+    if rez := cmd.config.get_session_field(
+        f"current_{contract_name.lower()}_at", exception_if_not_found=False
+    ):
         return cmd.w3.toChecksumAddress(rez)
 
     error_message = error_message or "Fail to read %s address from \"networks\", you should " \
@@ -55,8 +55,10 @@ def get_field_from_args_or_session(config, args, field_name):
     # type(rez) can be int in case of wallet-index, so we cannot make simply if(rez)
     if rez is not None:
         return rez
-    rez = config.get_session_field("default_%s" % field_name, exception_if_not_found=False)
-    if rez:
+    if rez := config.get_session_field(
+        f"default_{field_name}", exception_if_not_found=False
+    ):
         return rez
-    raise Exception("Fail to get default_%s from config, should specify %s via --%s parameter" % (
-        field_name, field_name, field_name.replace("_", "-")))
+    raise Exception(
+        f'Fail to get default_{field_name} from config, should specify {field_name} via --{field_name.replace("_", "-")} parameter'
+    )

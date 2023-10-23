@@ -33,7 +33,7 @@ class FreeCallPaymentStrategy(PaymentStrategy):
 
             endpoint_object = urlparse(daemon_endpoint)
             if endpoint_object.port is not None:
-                channel_endpoint = endpoint_object.hostname + ":" + str(endpoint_object.port)
+                channel_endpoint = f"{endpoint_object.hostname}:{str(endpoint_object.port)}"
             else:
                 channel_endpoint = endpoint_object.hostname
 
@@ -42,27 +42,27 @@ class FreeCallPaymentStrategy(PaymentStrategy):
             elif endpoint_object.scheme == "https":
                 channel = grpc.secure_channel(channel_endpoint, grpc.ssl_channel_credentials(root_certificates=root_certificate))
             else:
-                raise ValueError('Unsupported scheme in service metadata ("{}")'.format(endpoint_object.scheme))
+                raise ValueError(
+                    f'Unsupported scheme in service metadata ("{endpoint_object.scheme}")'
+                )
 
             stub = state_service_pb2_grpc.FreeCallStateServiceStub(channel)
             response = stub.GetFreeCallsAvailable(request)
-            if response.free_calls_available > 0:
-                return True
-            return False
+            return response.free_calls_available > 0
         except Exception as e:
             return False
 
     def get_payment_metadata(self, service_client):
         email, token_for_free_call, token_expiry_date_block = service_client.get_free_call_config()
         signature, current_block_number = self.generate_signature(service_client)
-        metadata = [("snet-free-call-auth-token-bin", token_for_free_call),
-                    ("snet-free-call-token-expiry-block", str(token_expiry_date_block)),
-                    ("snet-payment-type", "free-call"),
-                    ("snet-free-call-user-id", email),
-                    ("snet-current-block-number", str(current_block_number)),
-                    ("snet-payment-channel-signature-bin", signature)]
-
-        return metadata
+        return [
+            ("snet-free-call-auth-token-bin", token_for_free_call),
+            ("snet-free-call-token-expiry-block", str(token_expiry_date_block)),
+            ("snet-payment-type", "free-call"),
+            ("snet-free-call-user-id", email),
+            ("snet-current-block-number", str(current_block_number)),
+            ("snet-payment-channel-signature-bin", signature),
+        ]
 
     def select_channel(self, service_client):
         pass

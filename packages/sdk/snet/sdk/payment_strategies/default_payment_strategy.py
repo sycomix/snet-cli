@@ -22,16 +22,13 @@ class DefaultPaymentStrategy(PaymentStrategy):
         free_call_payment_strategy = FreeCallPaymentStrategy()
 
         if free_call_payment_strategy.is_free_call_available(service_client):
-            metadata = free_call_payment_strategy.get_payment_metadata(service_client)
+            return free_call_payment_strategy.get_payment_metadata(service_client)
+        elif service_client.get_concurrency_flag():
+            payment_strategy = PrePaidPaymentStrategy(self.concurrencyManager)
+            return payment_strategy.get_payment_metadata(service_client, self.channel)
         else:
-            if service_client.get_concurrency_flag():
-                payment_strategy = PrePaidPaymentStrategy(self.concurrencyManager)
-                metadata = payment_strategy.get_payment_metadata(service_client, self.channel)
-            else:
-                payment_strategy = PaidCallPaymentStrategy()
-                metadata = payment_strategy.get_payment_metadata(service_client)
-
-        return metadata
+            payment_strategy = PaidCallPaymentStrategy()
+            return payment_strategy.get_payment_metadata(service_client)
 
     def get_price(self, service_client):
         pass

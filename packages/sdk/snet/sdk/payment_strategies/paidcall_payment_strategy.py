@@ -21,15 +21,13 @@ class PaidCallPaymentStrategy(PaymentStrategy):
         )
         signature = service_client.generate_signature(message)
 
-        metadata = [
+        return [
             ("snet-payment-type", "escrow"),
             ("snet-payment-channel-id", str(channel.channel_id)),
             ("snet-payment-channel-nonce", str(channel.state["nonce"])),
             ("snet-payment-channel-amount", str(amount)),
-            ("snet-payment-channel-signature-bin", signature)
+            ("snet-payment-channel-signature-bin", signature),
         ]
-
-        return metadata
 
     def select_channel(self, service_client):
         account = service_client.account

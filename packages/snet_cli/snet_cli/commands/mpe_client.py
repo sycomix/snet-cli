@@ -23,8 +23,7 @@ class MPEClientCommand(MPEChannelCommand):
     def _sign_message(self, mpe_address, channel_id, nonce, amount):
         message = self._compose_message_to_sign(
             mpe_address, channel_id, nonce, amount)
-        sign = self.ident.sign_message_after_soliditySha3(message)
-        return sign
+        return self.ident.sign_message_after_soliditySha3(message)
 
     def _verify_my_signature(self, signature, mpe_address, channel_id, nonce, amount):
         message = self._compose_message_to_sign(
@@ -51,8 +50,7 @@ class MPEClientCommand(MPEChannelCommand):
 
         # If it is a file, try to read from it
         if Path(params_string).is_file():
-            self._printerr("Read call params from the file: %s" %
-                           params_string)
+            self._printerr(f"Read call params from the file: {params_string}")
             with open(params_string, 'rb') as f:
                 params_string = f.read()
 
@@ -87,16 +85,17 @@ class MPEClientCommand(MPEChannelCommand):
                 k_final = k_split[-1]
                 k_mods = k_split[:-1]
                 for m in k_mods:
-                    if (m == "file"):
+                    if m == "b64decode":
+                        v = base64.b64decode(v)
+                    elif m == "b64encode":
+                        v = base64.b64encode(v)
+                    elif m == "file":
                         with open(v, 'rb') as f:
                             v = f.read()
-                    elif (m == "b64encode"):
-                        v = base64.b64encode(v)
-                    elif (m == "b64decode"):
-                        v = base64.b64decode(v)
                     else:
                         raise Exception(
-                            "Unknown modifier ('%s') in call parameters. Possible modifiers: file, b64encode, b64decode" % m)
+                            f"Unknown modifier ('{m}') in call parameters. Possible modifiers: file, b64encode, b64decode"
+                        )
             rez[k_final] = v
         return rez
 
@@ -153,7 +152,8 @@ class MPEClientCommand(MPEChannelCommand):
                 "Cannot find endpoint in metadata for the given payment group.")
         if (len(endpoints) > 1):
             self._printerr(
-                "There are several endpoints for the given payment group. We will select %s" % endpoints[0])
+                f"There are several endpoints for the given payment group. We will select {endpoints[0]}"
+            )
         return endpoints[0]
 
     def call_server_lowlevel(self):
@@ -244,8 +244,7 @@ class MPEClientCommand(MPEChannelCommand):
             grpc_channel, self.args.channel_id)
         self._printout("current_nonce                  = %i" % current_nonce)
         self._printout("current_signed_amount_in_cogs  = %i" % current_amount)
-        self._printout("current_unspent_amount_in_cogs = %s" %
-                       str(unspent_amount))
+        self._printout(f"current_unspent_amount_in_cogs = {str(unspent_amount)}")
 
     def _get_price_from_metadata(self, service_metadata, group_name):
         for group in service_metadata.m["groups"]:
@@ -254,8 +253,7 @@ class MPEClientCommand(MPEChannelCommand):
                 for pricing in pricings:
                     if (pricing["price_model"] == "fixed_price"):
                         return pricing["price_in_cogs"]
-        raise Exception("We do not support price model: %s" %
-                        (pricing["price_model"]))
+        raise Exception(f'We do not support price model: {pricing["price_model"]}')
 
     def call_server_statelessly_with_params(self, params, group_name):
 
@@ -277,8 +275,13 @@ class MPEClientCommand(MPEChannelCommand):
         server_state = self._get_channel_state_from_server(
             grpc_channel, channel_id)
 
-        proceed = self.args.yes or input(
-            "Price for this call will be %s AGI (use -y to remove this warning). Proceed? (y/n): " % (cogs2stragi(price))) == "y"
+        proceed = (
+            self.args.yes
+            or input(
+                f"Price for this call will be {cogs2stragi(price)} AGI (use -y to remove this warning). Proceed? (y/n): "
+            )
+            == "y"
+        )
         if (not proceed):
             self._error("Cancelled")
 

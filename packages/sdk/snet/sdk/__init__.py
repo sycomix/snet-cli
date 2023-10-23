@@ -84,30 +84,42 @@ class SnetSDK:
         service_metadata = self._metadata_provider.enhance_service_metadata(org_id, service_id)
         group = self._get_service_group_details(service_metadata, group_name)
         strategy = payment_channel_management_strategy
-        service_client = ServiceClient(org_id, service_id, service_metadata, group, service_stub, strategy, options,
-                                       self.mpe_contract, self.account, self.web3)
-        return service_client
+        return ServiceClient(
+            org_id,
+            service_id,
+            service_metadata,
+            group,
+            service_stub,
+            strategy,
+            options,
+            self.mpe_contract,
+            self.account,
+            self.web3,
+        )
 
 
     def get_service_metadata(self, org_id, service_id):
         (found, registration_id, metadata_uri) = self.registry_contract.functions.getServiceRegistrationById(bytes(org_id, "utf-8"), bytes(service_id, "utf-8")).call()
 
         if found is not True:
-            raise Exception('No service "{}" found in organization "{}"'.format(service_id, org_id))
+            raise Exception(f'No service "{service_id}" found in organization "{org_id}"')
 
         metadata_hash = bytesuri_to_hash(metadata_uri)
         metadata_json = get_from_ipfs_and_checkhash(self.ipfs_client, metadata_hash)
-        metadata = mpe_service_metadata_from_json(metadata_json)
-        return metadata
+        return mpe_service_metadata_from_json(metadata_json)
 
     def _get_first_group(self, service_metadata):
         return service_metadata['groups'][0]
 
     def _get_group_by_group_name(self, service_metadata, group_name):
-        for group in service_metadata['groups']:
-            if group['group_name'] == group_name:
-                return group
-        return {}
+        return next(
+            (
+                group
+                for group in service_metadata['groups']
+                if group['group_name'] == group_name
+            ),
+            {},
+        )
 
     def _get_service_group_details(self, service_metadata, group_name):
         if len(service_metadata['groups']) == 0:

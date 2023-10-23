@@ -99,7 +99,7 @@ class MPETreasurerCommand(MPEClientCommand):
             self._printout("%i   %i   %s" % (
                 p["channel_id"], p["nonce"], cogs2stragi(p["amount"])))
             total += p["amount"]
-        self._printout("# total_unclaimed_in_AGI = %s" % cogs2stragi(total))
+        self._printout(f"# total_unclaimed_in_AGI = {cogs2stragi(total)}")
 
     def _blockchain_claim(self, payments):
         for payment in payments:
@@ -134,9 +134,10 @@ class MPETreasurerCommand(MPEClientCommand):
                 continue
             to_claim.append((channel_id,  blockchain["nonce"]))
 
-        payments = [self._call_StartClaim(
-            grpc_channel, channel_id, nonce) for channel_id, nonce in to_claim]
-        return payments
+        return [
+            self._call_StartClaim(grpc_channel, channel_id, nonce)
+            for channel_id, nonce in to_claim
+        ]
 
     def _claim_in_progress_and_claim_channels(self, grpc_channel, channels):
         """ Claim all 'pending' payments in progress and after we claim given channels """

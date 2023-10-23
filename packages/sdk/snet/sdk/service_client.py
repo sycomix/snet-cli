@@ -50,8 +50,7 @@ class ServiceClient:
         disable_blockchain_operations = self.options.get("disable_blockchain_operations", False)
         if disable_blockchain_operations is False:
             grpc_channel = self.grpc_channel
-        stub_instance = service_stub(grpc_channel)
-        return stub_instance
+        return service_stub(grpc_channel)
 
     def get_grpc_base_channel(self):
         return self.__base_grpc_channel
@@ -62,7 +61,7 @@ class ServiceClient:
             endpoint = self.service_metadata.get_all_endpoints_for_group(self.group["group_name"])[0]
         endpoint_object = urlparse(endpoint)
         if endpoint_object.port is not None:
-            channel_endpoint = endpoint_object.hostname + ":" + str(endpoint_object.port)
+            channel_endpoint = f"{endpoint_object.hostname}:{str(endpoint_object.port)}"
         else:
             channel_endpoint = endpoint_object.hostname
 
@@ -71,11 +70,12 @@ class ServiceClient:
         elif endpoint_object.scheme == "https":
             return grpc.secure_channel(channel_endpoint, grpc.ssl_channel_credentials(root_certificates=root_certificate))
         else:
-            raise ValueError('Unsupported scheme in service metadata ("{}")'.format(endpoint_object.scheme))
+            raise ValueError(
+                f'Unsupported scheme in service metadata ("{endpoint_object.scheme}")'
+            )
 
     def _get_service_call_metadata(self):
-        metadata = self.payment_strategy.get_payment_metadata(self)
-        return metadata
+        return self.payment_strategy.get_payment_metadata(self)
 
     def _intercept_call(self, client_call_details, request_iterator, request_streaming,
                         response_streaming):
@@ -93,12 +93,11 @@ class ServiceClient:
 
         # need to change this logic ,use maps to manage channels so that we can easily navigate it
         for new_payment_channel in new_payment_channels:
-            existing_channel = False
-            for existing_payment_channel in self.payment_channels:
-                if new_payment_channel.channel_id == existing_payment_channel.channel_id:
-                    existing_channel = True
-                    break
-
+            existing_channel = any(
+                new_payment_channel.channel_id
+                == existing_payment_channel.channel_id
+                for existing_payment_channel in self.payment_channels
+            )
             if not existing_channel:
                 new_channels_to_be_added.append(new_payment_channel)
 

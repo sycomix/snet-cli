@@ -24,8 +24,7 @@ def main():
     except Exception as e:
         if (sys.argv[1] == "--print-traceback"):
             raise
-        else:
-            print("Error:", e)
-            print("If you want to see full Traceback then run:")
-            print("snet --print-traceback [parameters]")
-            sys.exit(42)
+        print("Error:", e)
+        print("If you want to see full Traceback then run:")
+        print("snet --print-traceback [parameters]")
+        sys.exit(42)

@@ -12,8 +12,9 @@ SOURCES = {
 }
 
 def install_packages(sources, develop=False):
-    print("installing all packages in {} mode".format(
-              "development" if develop else "normal"))
+    print(
+        f'installing all packages in {"development" if develop else "normal"} mode'
+    )
     wd = os.getcwd()
     for k, v in sources.items():
         try:

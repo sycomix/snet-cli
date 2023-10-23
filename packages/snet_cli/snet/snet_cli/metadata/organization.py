@@ -246,12 +246,11 @@ class OrganizationMetadata(object):
             raise e
 
     def is_removing_existing_group_from_org(self, current_group_name, existing_registry_metadata_group_names):
-        if len(existing_registry_metadata_group_names-current_group_name) == 0:
-            pass
-        else:
+        if len(existing_registry_metadata_group_names - current_group_name) != 0:
             removed_groups = existing_registry_metadata_group_names - current_group_name
-            raise Exception("Cannot remove existing group from organization as it might be attached"
-                            " to services, groups you are removing are  %s" % removed_groups)
+            raise Exception(
+                f"Cannot remove existing group from organization as it might be attached to services, groups you are removing are  {removed_groups}"
+            )
 
     def validate(self, existing_registry_metadata=None):
 
@@ -266,18 +265,14 @@ class OrganizationMetadata(object):
         if self.description is None:
             raise Exception("description can not be null")
         if self.groups:
-            unique_group_names = set()
-            for group in self.groups:
-                unique_group_names.add(group.group_name)
-
+            unique_group_names = {group.group_name for group in self.groups}
             if len(unique_group_names) < len(self.groups):
                 raise Exception("Cannot create group with duplicate names")
         if len(self.groups) < 1:
             raise Exception(
                 "At least One group is required to create an organization")
-        else:
-            for group in self.groups:
-                group.validate()
+        for group in self.groups:
+            group.validate()
 
         existing_registry_metadata_group_names = set()
         if existing_registry_metadata:
@@ -306,7 +301,7 @@ class OrganizationMetadata(object):
         if asset_type == AssetType.HERO_IMAGE.value:
             self.assets[asset_type] = asset_ipfs_hash
         else:
-            raise Exception("Invalid asset type %s" % asset_type)
+            raise Exception(f"Invalid asset type {asset_type}")
 
     def remove_all_assets(self):
         self.assets = {}
@@ -315,7 +310,7 @@ class OrganizationMetadata(object):
         if asset_type == AssetType.HERO_IMAGE.value:
             self.assets[asset_type] = ""
         else:
-            raise Exception("Invalid asset type %s" % asset_type)
+            raise Exception(f"Invalid asset type {asset_type}")
 
     def add_description(self, description):
         self.description["description"] = description

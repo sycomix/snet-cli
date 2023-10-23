@@ -22,8 +22,10 @@ def import_protobuf_from_dir(proto_dir, method_name, service_name=None):
         is_found, rez = _import_protobuf_from_file(grpc_py_file, method_name, service_name)
         if is_found:
             good_rez.append(rez)
-    if len(good_rez) == 0:
-        raise Exception("Error while loading protobuf. Cannot find method=%s" % method_name)
+    if not good_rez:
+        raise Exception(
+            f"Error while loading protobuf. Cannot find method={method_name}"
+        )
     if len(good_rez) > 1:
         if service_name:
             raise Exception("Error while loading protobuf. Found method %s.%s in multiply .proto files. "
@@ -44,8 +46,8 @@ def _import_protobuf_from_file(grpc_py_file, method_name, service_name=None):
     """
 
     prefix = grpc_py_file[:-12]
-    pb2 = __import__("%s_pb2" % prefix)
-    pb2_grpc = __import__("%s_pb2_grpc" % prefix)
+    pb2 = __import__(f"{prefix}_pb2")
+    pb2_grpc = __import__(f"{prefix}_pb2_grpc")
 
     # we take all objects from pb2_grpc module which endswith "Stub", and we remove this postfix to get service_name
     all_service_names = [stub_name[:-4] for stub_name in dir(pb2_grpc) if stub_name.endswith("Stub")]
@@ -63,10 +65,10 @@ def _import_protobuf_from_file(grpc_py_file, method_name, service_name=None):
             if method.name == method_name:
                 request_class = method.input_type._concrete_class
                 response_class = method.output_type._concrete_class
-                stub_class = getattr(pb2_grpc, "%sStub" % service_name)
+                stub_class = getattr(pb2_grpc, f"{service_name}Stub")
 
                 found_services.append(service_name)
-    if len(found_services) == 0:
+    if not found_services:
         return False, None
     if len(found_services) > 1:
         raise Exception("Error while loading protobuf. We found methods %s in multiply services [%s]."

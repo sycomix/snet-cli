@@ -37,6 +37,5 @@ class SDKCommand(MPEServiceCommand):
             compile_proto(Path(proto_temp_dir_path), library_dir_path, target_language=self.args.language)
 
         self._printout(
-            'client libraries for service with id "{}" in org with id "{}" generated at {}'.format(library_service_id,
-                                                                                                   library_org_id,
-                                                                                                   library_dir_path))
+            f'client libraries for service with id "{library_service_id}" in org with id "{library_org_id}" generated at {library_dir_path}'
+        )

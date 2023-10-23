@@ -139,10 +139,8 @@ class TrezorIdentityProvider(IdentityProvider):
         self.client = TrezorClient(HidTransport.enumerate()[0])
         self.index = index
         self.address = self.w3.toChecksumAddress(
-            "0x" + bytes(self.client.ethereum_get_address([44 + BIP32_HARDEN,
-                                                           60 + BIP32_HARDEN,
-                                                           BIP32_HARDEN, 0,
-                                                           index])).hex())
+            f"0x{bytes(self.client.ethereum_get_address([44 + BIP32_HARDEN, 60 + BIP32_HARDEN, BIP32_HARDEN, 0, index])).hex()}"
+        )
 
     def get_address(self):
         return self.address
@@ -190,10 +188,12 @@ class LedgerIdentityProvider(IdentityProvider):
         except CommException:
             raise RuntimeError(
                 "Received commException from ledger. Are you sure your device is plugged in?")
-        self.dongle_path = parse_bip32_path("44'/60'/0'/0/{}".format(index))
+        self.dongle_path = parse_bip32_path(f"44'/60'/0'/0/{index}")
         apdu = LedgerIdentityProvider.GET_ADDRESS_OP
-        apdu += bytearray([len(self.dongle_path) + 1,
-                           int(len(self.dongle_path) / 4)]) + self.dongle_path
+        apdu += (
+            bytearray([len(self.dongle_path) + 1, len(self.dongle_path) // 4])
+            + self.dongle_path
+        )
         try:
             result = self.dongle.exchange(apdu)
         except CommException:
@@ -226,8 +226,12 @@ class LedgerIdentityProvider(IdentityProvider):
                                                   overflow], encoded_tx[-overflow:]
 
         apdu = LedgerIdentityProvider.SIGN_TX_OP
-        apdu += bytearray([len(self.dongle_path) + 1 +
-                           len(encoded_tx), int(len(self.dongle_path) / 4)])
+        apdu += bytearray(
+            [
+                len(self.dongle_path) + 1 + len(encoded_tx),
+                len(self.dongle_path) // 4,
+            ]
+        )
         apdu += self.dongle_path + encoded_tx
         try:
             print("Sending transaction to ledger for signature...\n", file=out_f)
@@ -260,8 +264,12 @@ class LedgerIdentityProvider(IdentityProvider):
 
     def sign_message_after_soliditySha3(self, message):
         apdu = LedgerIdentityProvider.SIGN_MESSAGE_OP
-        apdu += bytearray([len(self.dongle_path) + 1 +
-                           len(message) + 4, int(len(self.dongle_path) / 4)])
+        apdu += bytearray(
+            [
+                len(self.dongle_path) + 1 + len(message) + 4,
+                len(self.dongle_path) // 4,
+            ]
+        )
         apdu += self.dongle_path + struct.pack(">I", len(message)) + message
         try:
             result = self.dongle.exchange(apdu)
@@ -269,7 +277,7 @@ class LedgerIdentityProvider(IdentityProvider):
             raise RuntimeError("Received commException from ledger. Are you sure your device is unlocked and the "
                                "Ethereum app is running?")
 
-        return result[1:] + result[0:1]
+        return result[1:] + result[:1]
 
 
 def send_and_wait_for_transaction_receipt(txn_hash, w3):
@@ -320,8 +328,7 @@ def get_kws_for_identity_type(identity_type):
     elif identity_type == "keystore":
         return [("keystore_path", PLAINTEXT)]
     else:
-        raise RuntimeError(
-            "unrecognized identity_type {}".format(identity_type))
+        raise RuntimeError(f"unrecognized identity_type {identity_type}")
 
 
 def get_identity_types():

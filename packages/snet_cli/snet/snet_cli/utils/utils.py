@@ -28,22 +28,16 @@ class DefaultAttributeObject(object):
         return getattr(self, item)
 
     def getint(self, item):
-        if getattr(self, item) is None:
-            return None
-        return int(getattr(self, item))
+        return None if getattr(self, item) is None else int(getattr(self, item))
 
     def getfloat(self, item):
-        if getattr(self, item) is None:
-            return None
-        return float(getattr(self, item))
+        return None if getattr(self, item) is None else float(getattr(self, item))
 
     def getboolean(self, item):
         if getattr(self, item) is None:
             return None
         i = self.getstring(item)
-        if i in ["yes", "on", "true", "True", "1"]:
-            return True
-        return False
+        return i in ["yes", "on", "true", "True", "1"]
 
     def __getattr__(self, item):
         return self.__dict__.get(item, None)
@@ -65,33 +59,29 @@ def get_web3(rpc_endpoint):
 
 
 def serializable(o):
-    if isinstance(o, bytes):
-        return o.hex()
-    else:
-        return o.__dict__
+    return o.hex() if isinstance(o, bytes) else o.__dict__
 
 
 def safe_address_converter(a):
     if not web3.eth.is_checksum_address(a):
-        raise Exception("%s is not is not a valid Ethereum checksum address" % a)
+        raise Exception(f"{a} is not is not a valid Ethereum checksum address")
     return a
 
 
 def type_converter(t):
     if t.endswith("[]"):
         return lambda x: list(map(type_converter(t.replace("[]", "")), json.loads(x)))
+    if "int" in t:
+        return lambda x: web3.Web3.toInt(text=x)
+    elif "bytes32" in t:
+        return lambda x: web3.Web3.toBytes(text=x).ljust(32, b"\0") if not x.startswith(
+            "0x") else web3.Web3.toBytes(hexstr=x).ljust(32, b"\0")
+    elif "byte" in t:
+        return lambda x: web3.Web3.toBytes(text=x) if not x.startswith("0x") else web3.Web3.toBytes(hexstr=x)
+    elif "address" in t:
+        return safe_address_converter
     else:
-        if "int" in t:
-            return lambda x: web3.Web3.toInt(text=x)
-        elif "bytes32" in t:
-            return lambda x: web3.Web3.toBytes(text=x).ljust(32, b"\0") if not x.startswith(
-                "0x") else web3.Web3.toBytes(hexstr=x).ljust(32, b"\0")
-        elif "byte" in t:
-            return lambda x: web3.Web3.toBytes(text=x) if not x.startswith("0x") else web3.Web3.toBytes(hexstr=x)
-        elif "address" in t:
-            return safe_address_converter
-        else:
-            return str
+        return str
 
 
 def bytes32_to_str(b):
@@ -126,19 +116,22 @@ def walk_imports(entry_path):
         if os.path.isfile(path):
             _add_next_paths(path, entry_path, seen_paths, next_paths)
         else:
-            raise IOError("Import path must be a valid file: {}".format(path))
+            raise IOError(f"Import path must be a valid file: {path}")
     return seen_paths
 
 
 def get_contract_def(contract_name, contract_artifacts_root=RESOURCES_PATH.joinpath("contracts")):
     contract_def = {}
-    with open(Path(__file__).absolute().parent.joinpath(contract_artifacts_root, "abi",
-                                                        "{}.json".format(contract_name))) as f:
+    with open(Path(__file__).absolute().parent.joinpath(contract_artifacts_root, "abi", f"{contract_name}.json")) as f:
         contract_def["abi"] = json.load(f)
-    if os.path.isfile(Path(__file__).absolute().parent.joinpath(contract_artifacts_root, "networks",
-                                                                "{}.json".format(contract_name))):
-        with open(Path(__file__).absolute().parent.joinpath(contract_artifacts_root, "networks",
-                                                            "{}.json".format(contract_name))) as f:
+    if os.path.isfile(
+        Path(__file__)
+        .absolute()
+        .parent.joinpath(
+            contract_artifacts_root, "networks", f"{contract_name}.json"
+        )
+    ):
+        with open(Path(__file__).absolute().parent.joinpath(contract_artifacts_root, "networks", f"{contract_name}.json")) as f:
             contract_def["networks"] = json.load(f)
     return contract_def
 
@@ -159,15 +152,12 @@ def compile_proto(entry_path, codegen_dir, proto_file=None, target_language="pyt
             os.makedirs(codegen_dir)
         proto_include = pkg_resources.resource_filename('grpc_tools', '_proto')
 
-        compiler_args = [
-            "-I{}".format(entry_path),
-            "-I{}".format(proto_include)
-        ]
+        compiler_args = [f"-I{entry_path}", f"-I{proto_include}"]
 
         if target_language == "python":
             compiler_args.insert(0, "protoc")
-            compiler_args.append("--python_out={}".format(codegen_dir))
-            compiler_args.append("--grpc_python_out={}".format(codegen_dir))
+            compiler_args.append(f"--python_out={codegen_dir}")
+            compiler_args.append(f"--grpc_python_out={codegen_dir}")
             compiler = protoc
         elif target_language == "nodejs":
             protoc_node_compiler_path = Path(
@@ -179,9 +169,9 @@ def compile_proto(entry_path, codegen_dir, proto_file=None, target_language="pyt
             if not os.path.isfile(protoc_node_compiler_path) or not os.path.isfile(grpc_node_plugin_path):
                 print("Missing required node.js protoc compiler. Retrieving from npm...")
                 subprocess.run(["npm", "install"], cwd=RESOURCES_PATH)
-            compiler_args.append("--js_out=import_style=commonjs,binary:{}".format(codegen_dir))
-            compiler_args.append("--grpc_out={}".format(codegen_dir))
-            compiler_args.append("--plugin=protoc-gen-grpc={}".format(grpc_node_plugin_path))
+            compiler_args.append(f"--js_out=import_style=commonjs,binary:{codegen_dir}")
+            compiler_args.append(f"--grpc_out={codegen_dir}")
+            compiler_args.append(f"--plugin=protoc-gen-grpc={grpc_node_plugin_path}")
             compiler = lambda args: subprocess.run([str(protoc_node_compiler_path)] + args)
 
         if proto_file:
@@ -189,11 +179,7 @@ def compile_proto(entry_path, codegen_dir, proto_file=None, target_language="pyt
         else:
             compiler_args.extend([str(p) for p in entry_path.glob("**/*.proto")])
 
-        if not compiler(compiler_args):
-            return True
-        else:
-            return False
-
+        return not compiler(compiler_args)
     except Exception as e:
         print(e)
         return False

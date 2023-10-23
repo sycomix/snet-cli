@@ -16,7 +16,7 @@ class Config(ConfigParser):
 
     def get_session_network_name(self):
         session_network = self["session"]["network"]
-        self._check_section("network.%s" % session_network)
+        self._check_section(f"network.{session_network}")
         return session_network
 
     def safe_get_session_identity_network_names(self):
@@ -24,7 +24,7 @@ class Config(ConfigParser):
             first_identity_message_and_exit()
 
         session_identity = self["session"]["identity"]
-        self._check_section("identity.%s" % session_identity)
+        self._check_section(f"identity.{session_identity}")
 
         session_network = self.get_session_network_name()
 
@@ -47,23 +47,23 @@ class Config(ConfigParser):
 
     def _set_session_network(self, network, out_f):
         if (network not in self.get_all_networks_names()):
-            raise Exception("Network %s is not in config" % network)
-        print("Switch to network: %s" % network, file=out_f)
+            raise Exception(f"Network {network} is not in config")
+        print(f"Switch to network: {network}", file=out_f)
         self["session"]["network"] = network
         self._persist()
 
     def set_session_identity(self, identity, out_f):
         if (identity not in self.get_all_identities_names()):
-            raise Exception('Identity "%s" is not in config' % identity)
-        network = self._get_identity_section(identity).get("network")
-        if (network):
-            print('Identity "%s" is bind to network "%s"' % (identity, network), file=out_f)
+            raise Exception(f'Identity "{identity}" is not in config')
+        if network := self._get_identity_section(identity).get("network"):
+            print(f'Identity "{identity}" is bind to network "{network}"', file=out_f)
             self._set_session_network(network, out_f)
         else:
             print(
-                'Identity "%s" is not bind to any network. You should switch network manually if you need.' % identity,
-                file=out_f)
-        print("Switch to identity: %s" % (identity), file=out_f)
+                f'Identity "{identity}" is not bind to any network. You should switch network manually if you need.',
+                file=out_f,
+            )
+        print(f"Switch to identity: {identity}", file=out_f)
         self["session"]["identity"] = identity
         self._persist()
 
@@ -75,48 +75,53 @@ class Config(ConfigParser):
         rez_identity = self._get_identity_section(session_identity).get(key)
         rez_network = self._get_network_section(session_network).get(key)
 
-        rez_ipfs = None
-        if (key == "default_ipfs_endpoint"):
-            rez_ipfs = self.get_ipfs_endpoint()
-
+        rez_ipfs = (
+            self.get_ipfs_endpoint() if (key == "default_ipfs_endpoint") else None
+        )
         rez = rez_identity or rez_network or rez_ipfs
         if (not rez and exception_if_not_found):
-            raise Exception("Cannot find %s in the session.identity and in the session.network" % key)
+            raise Exception(
+                f"Cannot find {key} in the session.identity and in the session.network"
+            )
         return rez
 
     def set_session_field(self, key, value, out_f):
         if (key == "default_ipfs_endpoint"):
             self.set_ipfs_endpoint(value)
-            print("set default_ipfs_endpoint=%s" % value, file=out_f)
+            print(f"set default_ipfs_endpoint={value}", file=out_f)
         elif (key in get_session_network_keys()):
             session_network = self.get_session_network_name();
             self.set_network_field(session_network, key, value)
-            print("set {}={} for network={}".format(key, value, session_network), file=out_f)
+            print(f"set {key}={value} for network={session_network}", file=out_f)
         elif (key in get_session_identity_keys()):
             session_identity, _ = self.safe_get_session_identity_network_names()
             self.set_identity_field(session_identity, key, value)
-            print("set {}={} for identity={}".format(key, value, session_identity), file=out_f)
+            print(f"set {key}={value} for identity={session_identity}", file=out_f)
         else:
             all_keys = get_session_network_keys() + get_session_identity_keys() + ["default_ipfs_endpoint"]
-            raise Exception("key {} not in {}".format(key, all_keys))
+            raise Exception(f"key {key} not in {all_keys}")
 
     def unset_session_field(self, key, out_f):
         if (key in get_session_network_keys_removable()):
-            print("unset %s from network %s" % (key, self["session"]["network"]), file=out_f)
+            print(f'unset {key} from network {self["session"]["network"]}', file=out_f)
             del self._get_network_section(self["session"]["network"])[key]
         self._persist()
 
     def session_to_dict(self):
         session_identity, session_network = self.safe_get_session_identity_network_names()
 
-        show = {"session", "network.%s" % session_network, "identity.%s" % session_identity, "ipfs"}
-        rez = {f: dict(self[f]) for f in show}
-        return rez
+        show = {
+            "session",
+            f"network.{session_network}",
+            f"identity.{session_identity}",
+            "ipfs",
+        }
+        return {f: dict(self[f]) for f in show}
 
     def add_network(self, network, rpc_endpoint, default_gas_price):
-        network_section = "network.%s" % network
+        network_section = f"network.{network}"
         if (network_section in self):
-            raise Exception("Network section %s already exists in config" % network)
+            raise Exception(f"Network section {network} already exists in config")
 
         self[network_section] = {}
         self[network_section]["default_eth_rpc_endpoint"] = str(rpc_endpoint)
@@ -128,16 +133,20 @@ class Config(ConfigParser):
         self._persist()
 
     def add_identity(self, identity_name, identity, out_f):
-        identity_section = "identity.%s" % identity_name
+        identity_section = f"identity.{identity_name}"
         if (identity_section in self):
-            raise Exception("Identity section %s already exists in config" % identity_section)
+            raise Exception(
+                f"Identity section {identity_section} already exists in config"
+            )
         if ("network" in identity and identity["network"] not in self.get_all_networks_names()):
-            raise Exception("Network %s is not in config" % identity["network"])
+            raise Exception(f'Network {identity["network"]} is not in config')
         self[identity_section] = identity
         self._persist()
         # switch to it, if it was the first identity
         if (len(self.get_all_identities_names()) == 1):
-            print("You've just added your first identity %s. We will automatically switch to it!" % identity_name)
+            print(
+                f"You've just added your first identity {identity_name}. We will automatically switch to it!"
+            )
             self.set_session_identity(identity_name, out_f)
 
     def set_identity_field(self, identity, key, value):
@@ -146,11 +155,11 @@ class Config(ConfigParser):
 
     def _get_network_section(self, network):
         """ return section for network or identity """
-        return self["network.%s" % network]
+        return self[f"network.{network}"]
 
     def _get_identity_section(self, identity):
         """ return section for the specific identity """
-        return self["identity.%s" % identity]
+        return self[f"identity.{identity}"]
 
     def get_ipfs_endpoint(self):
         return self["ipfs"]["default_ipfs_endpoint"]
@@ -167,12 +176,12 @@ class Config(ConfigParser):
 
     def delete_identity(self, identity_name):
         if (identity_name not in self.get_all_identities_names()):
-            raise Exception("identity_name {} does not exist".format(identity_name))
+            raise Exception(f"identity_name {identity_name} does not exist")
 
         session_identity, _ = self.safe_get_session_identity_network_names()
         if (identity_name == session_identity):
-            raise Exception("identity_name {} is in use".format(identity_name))
-        self.remove_section("identity.{}".format(identity_name))
+            raise Exception(f"identity_name {identity_name} is in use")
+        self.remove_section(f"identity.{identity_name}")
         self._persist()
 
     def create_default_config(self):
@@ -198,7 +207,7 @@ class Config(ConfigParser):
 
     def _check_section(self, s):
         if (s not in self):
-            raise Exception("Config error, section %s is absent" % s)
+            raise Exception(f"Config error, section {s} is absent")
 
     def _persist(self):
         with open(self._config_file, "w") as f:

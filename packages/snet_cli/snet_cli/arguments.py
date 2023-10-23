@@ -25,7 +25,7 @@ class CustomParser(argparse.ArgumentParser):
         super().__init__(*args, **kwargs)
 
     def error(self, message):
-        sys.stderr.write("error: {}\n\n".format(message))
+        sys.stderr.write(f"error: {message}\n\n")
         self.print_help(sys.stderr)
         sys.exit(2)
 
@@ -131,11 +131,12 @@ def add_identity_options(parser, config):
     p.add_argument("identity_name",
                    help="Name of identity to create",
                    metavar="IDENTITY_NAME")
-    p.add_argument("identity_type",
-                   choices=get_identity_types(),
-                   help="Type of identity to create from {}".format(
-                       get_identity_types()),
-                   metavar="IDENTITY_TYPE")
+    p.add_argument(
+        "identity_type",
+        choices=get_identity_types(),
+        help=f"Type of identity to create from {get_identity_types()}",
+        metavar="IDENTITY_TYPE",
+    )
     p.add_argument("--mnemonic",
                    help="BIP39 mnemonic for 'mnemonic' identity_type")
     p.add_argument("--private-key",
@@ -154,15 +155,17 @@ def add_identity_options(parser, config):
     p.set_defaults(fn="delete")
 
     identity_names = config.get_all_identities_names()
-    p.add_argument("identity_name",
-                   choices=identity_names,
-                   help="Name of identity to delete from {}".format(
-                       identity_names),
-                   metavar="IDENTITY_NAME")
+    p.add_argument(
+        "identity_name",
+        choices=identity_names,
+        help=f"Name of identity to delete from {identity_names}",
+        metavar="IDENTITY_NAME",
+    )
 
     for identity_name in identity_names:
-        p = subparsers.add_parser(identity_name,
-                                  help="Switch to {} identity".format(identity_name))
+        p = subparsers.add_parser(
+            identity_name, help=f"Switch to {identity_name} identity"
+        )
         p.set_defaults(identity_name=identity_name)
         p.set_defaults(fn="set")
 
@@ -194,7 +197,8 @@ def add_network_options(parser, config):
     network_names = config.get_all_networks_names()
     for network_name in network_names:
         p = subparsers.add_parser(
-            network_name, help="Switch to {} network".format(network_name))
+            network_name, help=f"Switch to {network_name} network"
+        )
         p.set_defaults(network_name=network_name)
         p.set_defaults(fn="set")
 
@@ -207,11 +211,12 @@ def add_session_options(parser):
 def add_set_options(parser):
     parser.set_defaults(cmd=SessionSetCommand)
     parser.set_defaults(fn="set")
-    parser.add_argument("key",
-                        choices=get_session_keys(),
-                        help="Session key to set from {}".format(
-                            get_session_keys()),
-                        metavar="KEY")
+    parser.add_argument(
+        "key",
+        choices=get_session_keys(),
+        help=f"Session key to set from {get_session_keys()}",
+        metavar="KEY",
+    )
     parser.add_argument("value",
                         help="Desired value of session key",
                         metavar="VALUE")
@@ -220,11 +225,12 @@ def add_set_options(parser):
 def add_unset_options(parser):
     parser.set_defaults(cmd=SessionSetCommand)
     parser.set_defaults(fn="unset")
-    parser.add_argument("key",
-                        choices=get_session_network_keys_removable(),
-                        help="Session key to unset from {}".format(
-                            get_session_network_keys_removable()),
-                        metavar="KEY")
+    parser.add_argument(
+        "key",
+        choices=get_session_network_keys_removable(),
+        help=f"Session key to unset from {get_session_network_keys_removable()}",
+        metavar="KEY",
+    )
 
 
 def add_contract_options(parser):
@@ -237,7 +243,8 @@ def add_contract_options(parser):
         contract_name = re.search(
             r"([^.]*)\.json", os.path.basename(path)).group(1)
         contract_p = subparsers.add_parser(
-            contract_name, help="{} contract".format(contract_name))
+            contract_name, help=f"{contract_name} contract"
+        )
         add_contract_function_options(contract_p, contract_name)
 
 
@@ -433,22 +440,27 @@ def add_contract_function_options(parser, contract_name):
     parser.set_defaults(contract_def=contract_def)
     parser.set_defaults(contract_name=contract_name)
 
-    fns = []
-    for fn in filter(lambda e: e["type"] == "function", contract_def["abi"]):
-        fns.append({
+    if fns := [
+        {
             "name": fn["name"],
-            "named_inputs": [(i["name"], i["type"]) for i in fn["inputs"] if i["name"] != ""],
-            "positional_inputs": [i["type"] for i in fn["inputs"] if i["name"] == ""]
-        })
-
-    if len(fns) > 0:
+            "named_inputs": [
+                (i["name"], i["type"]) for i in fn["inputs"] if i["name"] != ""
+            ],
+            "positional_inputs": [
+                i["type"] for i in fn["inputs"] if i["name"] == ""
+            ],
+        }
+        for fn in filter(
+            lambda e: e["type"] == "function", contract_def["abi"]
+        )
+    ]:
         subparsers = parser.add_subparsers(
-            title="{} functions".format(contract_name), metavar="FUNCTION")
+            title=f"{contract_name} functions", metavar="FUNCTION"
+        )
         subparsers.required = True
 
         for fn in fns:
-            fn_p = subparsers.add_parser(
-                fn["name"], help="{} function".format(fn["name"]))
+            fn_p = subparsers.add_parser(fn["name"], help=f'{fn["name"]} function')
             fn_p.set_defaults(fn="call")
             fn_p.set_defaults(contract_function=fn["name"])
             for i in fn["positional_inputs"]:
@@ -457,9 +469,11 @@ def add_contract_function_options(parser, contract_name):
                                   type=type_converter(i),
                                   metavar=i.upper())
             for i in fn["named_inputs"]:
-                fn_p.add_argument("contract_named_input_{}".format(i[0]),
-                                  type=type_converter(i[1]),
-                                  metavar="{}_{}".format(i[0].lstrip("_"), i[1].upper()))
+                fn_p.add_argument(
+                    f"contract_named_input_{i[0]}",
+                    type=type_converter(i[1]),
+                    metavar=f'{i[0].lstrip("_")}_{i[1].upper()}',
+                )
             fn_p.add_argument("--transact",
                               action="store_const",
                               const="transact",
@@ -472,19 +486,20 @@ def add_contract_identity_arguments(parser, names_and_destinations=(("", "at"),)
     identity_g = parser.add_argument_group(title="contract identity arguments")
     for (name, destination) in names_and_destinations:
         if name != "":
-            arg_name = "{}-".format(name)
-            metavar_name = "{}_".format(name.replace("-", "_"))
+            arg_name = f"{name}-"
+            metavar_name = f'{name.replace("-", "_")}_'
         else:
             arg_name = name
             metavar_name = name
-        h = "{} contract address".format(name)
+        h = f"{name} contract address"
         if destination != "at":
-            h += " (defaults to session.current_{})".format(destination)
-        identity_g.add_argument("--{}at".format(arg_name),
-                                dest=destination,
-                                metavar="{}ADDRESS".format(
-                                    metavar_name.upper()),
-                                help=h)
+            h += f" (defaults to session.current_{destination})"
+        identity_g.add_argument(
+            f"--{arg_name}at",
+            dest=destination,
+            metavar=f"{metavar_name.upper()}ADDRESS",
+            help=h,
+        )
 
 
 def add_eth_call_arguments(parser):
@@ -1364,11 +1379,12 @@ def add_sdk_options(parser):
     p = subparsers.add_parser("generate-client-library",
                               help="Generate compiled client libraries to call services using your language of choice")
     p.set_defaults(fn="generate_client_library")
-    p.add_argument("language",
-                   choices=supported_languages,
-                   help="Choose target language for the generated client library from {}".format(
-                       supported_languages),
-                   metavar="LANGUAGE")
+    p.add_argument(
+        "language",
+        choices=supported_languages,
+        help=f"Choose target language for the generated client library from {supported_languages}",
+        metavar="LANGUAGE",
+    )
     add_p_service_in_registry(p)
     p.add_argument("protodir",
                    nargs="?",

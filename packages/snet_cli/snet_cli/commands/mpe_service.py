@@ -67,7 +67,7 @@ class MPEServiceCommand(BlockchainCommand):
             while True:
                 org_id = input(f"organization id `{display_name}` service would be linked to: ").strip()
                 while org_id == "":
-                    org_id = input(f"organization id required: ").strip()
+                    org_id = input("organization id required: ").strip()
                 try:
                     org_metadata = self._get_organization_metadata_from_registry(org_id)
                     no_of_groups = len(org_metadata.groups)
@@ -98,7 +98,10 @@ class MPEServiceCommand(BlockchainCommand):
             print('', '', json.dumps(metadata.m, indent=2), sep='\n')
             print("Are you sure you want to create? [y/n] ", end='')
             if input() == 'y':
-                file_name = input(f"Choose file name: (service_metadata) ") or 'service_metadata'
+                file_name = (
+                    input("Choose file name: (service_metadata) ")
+                    or 'service_metadata'
+                )
                 file_name += '.json'
                 metadata.save_pretty(file_name)
                 print(f"{file_name} created.")
@@ -132,7 +135,7 @@ class MPEServiceCommand(BlockchainCommand):
             if self.args.fixed_price is not None:
                 metadata.set_fixed_price_in_cogs(
                     self.args.group_name, self.args.fixed_price)
-        elif self.args.group_name or self.args.fixed_price:
+        elif self.args.fixed_price:
             raise Exception(
                 "endpoints / fixed price can be attached to a group please pass group_name")
         metadata.save_pretty(self.args.metadata_file)
@@ -263,15 +266,14 @@ class MPEServiceCommand(BlockchainCommand):
                 except ValueError:
                     print("Choose only between (image, video).")
                 else:
-                    if media_type not in ('image', 'video'):
-                        print("Choose only between (image, video).")
-                    else:
+                    if media_type in ('image', 'video'):
                         break
+                    else:
+                        print("Choose only between (image, video).")
+        elif search(r'(https:\/\/)?(www\.)+([-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_\+.~#?&//=]*)', self.args.media_url):
+            raise ValueError("Media endpoint supported only for secure sites.")
         else:
-            if search(r'(https:\/\/)?(www\.)+([-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_\+.~#?&//=]*)', self.args.media_url):
-                raise ValueError("Media endpoint supported only for secure sites.")
-            else:
-                raise ValueError(f"Entered url '{self.args.media_url}' is invalid.")
+            raise ValueError(f"Entered url '{self.args.media_url}' is invalid.")
         file_extension_validator = r'^.+\.(jpg|jpeg|JPG|png|gif|GIF|mp4)$'
         # Detect whether to add asset on IPFS or if external resource
         if search(file_extension_validator, self.args.media_url):
@@ -317,9 +319,7 @@ class MPEServiceCommand(BlockchainCommand):
 
     def metadata_add_description(self):
         """ Metadata: add description """
-        service_description = {}
-        if (self.args.json):
-            service_description = json.loads(self.args.json)
+        service_description = json.loads(self.args.json) if self.args.json else {}
         if (self.args.url):
             if "url" in service_description:
                 raise Exception(
@@ -373,21 +373,21 @@ class MPEServiceCommand(BlockchainCommand):
         except Exception as e:
             docs = "http://snet-cli-docs.singularitynet.io/service.html"
             error_message = f"\nVisit {docs} for more information."
-            if e.validator == 'required':
-                raise ValidationError(e.message + error_message)
-            elif e.validator == 'minLength':
-                raise ValidationError(f"`{e.path[-1]}` -> cannot be empty." + error_message)
-            elif e.validator == 'minItems':
-                raise ValidationError(f"`{e.path[-1]}` -> minimum 1 item required." + error_message)
-            elif e.validator == 'type':
-                raise ValidationError(f"`{e.path[-1]}` -> {e.message}" + error_message)
-            elif e.validator == 'enum':
-                raise ValidationError(f"`{e.path[-1]}` -> {e.message}" + error_message)
-            elif e.validator == 'additionalProperties':
+            if e.validator == 'additionalProperties':
                 if len(e.path) != 0:
-                    raise ValidationError(f"{e.message} in `{e.path[-2]}`." + error_message)
+                    raise ValidationError(f"{e.message} in `{e.path[-2]}`.{error_message}")
                 else:
-                    raise ValidationError(f"{e.message} in main object." + error_message)
+                    raise ValidationError(f"{e.message} in main object.{error_message}")
+            elif e.validator == 'minItems':
+                raise ValidationError(
+                    f"`{e.path[-1]}` -> minimum 1 item required.{error_message}"
+                )
+            elif e.validator == 'minLength':
+                raise ValidationError(f"`{e.path[-1]}` -> cannot be empty.{error_message}")
+            elif e.validator == 'required':
+                raise ValidationError(e.message + error_message)
+            elif e.validator in ['type', 'enum']:
+                raise ValidationError(f"`{e.path[-1]}` -> {e.message}{error_message}")
         else:
             exit("OK. Ready to publish.")
 
@@ -426,24 +426,21 @@ class MPEServiceCommand(BlockchainCommand):
         rez = self.call_contract_command(
             "Registry", "getOrganizationById", params)
         if (rez[0] == False):
-            raise Exception("Cannot find  Organization with id=%s" % (
-                self.args.org_id))
+            raise Exception(f"Cannot find  Organization with id={self.args.org_id}")
         return {"orgMetadataURI": rez[2]}
 
     def _validate_service_group_with_org_group_and_update_group_id(self, org_id, metadata_file):
         org_metadata = self._get_organization_metadata_from_registry(org_id)
         new_service_metadata = load_mpe_service_metadata(metadata_file)
-        org_groups = {}
-        for group in org_metadata.groups:
-            org_groups[group.group_name] = group
-
+        org_groups = {group.group_name: group for group in org_metadata.groups}
         for group in new_service_metadata.m["groups"]:
             if group["group_name"] in org_groups:
                 group["group_id"] = org_groups[group["group_name"]].group_id
                 new_service_metadata.save_pretty(metadata_file)
             else:
                 raise Exception(
-                    "Group name %s does not exist in organization" % group["group_name"])
+                    f'Group name {group["group_name"]} does not exist in organization'
+                )
 
     def publish_service_with_metadata(self):
         self._validate_service_group_with_org_group_and_update_group_id(
@@ -495,8 +492,9 @@ class MPEServiceCommand(BlockchainCommand):
         rez = self.call_contract_command(
             "Registry", "getServiceRegistrationById", params)
         if (rez[0] == False):
-            raise Exception("Cannot find Service with id=%s in Organization with id=%s" % (
-                self.args.service_id, self.args.org_id))
+            raise Exception(
+                f"Cannot find Service with id={self.args.service_id} in Organization with id={self.args.org_id}"
+            )
         return {"metadataURI": rez[2]}
 
     def _get_service_metadata_from_registry(self):
@@ -518,20 +516,18 @@ class MPEServiceCommand(BlockchainCommand):
             stub = heartb_pb2_grpc.HealthStub(channel)
             response = stub.Check(
                 heartb_pb2.HealthCheckRequest(service=""), timeout=10)
-            if response != None and response.status == 1:
-                return True
-            return False
+            return response != None and response.status == 1
         except Exception as e:
             return False
 
     def print_service_status(self):
         metadata = self._get_service_metadata_from_registry()
         groups = []
-        if self.args.group_name != None:
+        if self.args.group_name is None:
+            groups = metadata.get_all_group_endpoints()
+        else:
             groups = {self.args.group_name: metadata.get_all_endpoints_for_group(
                 self.args.group_name)}
-        else:
-            groups = metadata.get_all_group_endpoints()
         srvc_status = defaultdict(list)
         for name, group_endpoints in groups.items():
             for endpoint in group_endpoints:
@@ -539,7 +535,7 @@ class MPEServiceCommand(BlockchainCommand):
                     url=endpoint) else "Not Available"
                 srvc_status[name].append(
                     {"endpoint": endpoint, "status": status})
-        if srvc_status == {}:
+        if not srvc_status:
             self._printout(
                 "Error: No endpoints found to check service status.")
             return
